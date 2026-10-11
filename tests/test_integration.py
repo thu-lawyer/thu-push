@@ -93,6 +93,8 @@ def fake_env_file(path: Path, extra: dict | None = None) -> Path:
         "ND_TO_ADDR=t3-verify-to@t3-verify.invalid",
         "ND_FROM_ADDR=t3-verify-from@t3-verify.invalid",
         "ND_HMAC_SECRET=t3-verify-hmac-secret",
+        # 站点源默认关闭：集成测试只验证 campus/gzh 流水线，禁止测试进程真连外网站点
+        "ND_SITE_ENABLED=0",
     ]
     for key, value in (extra or {}).items():
         lines.append(f"{key}={value}")
@@ -102,7 +104,14 @@ def fake_env_file(path: Path, extra: dict | None = None) -> Path:
 
 
 def make_cfg(db: Path, env_path: Path, **overrides):
-    """加载配置并把 db_path 指到测试库（profile.yaml 故意指向不存在的路径 → 走内置默认）。"""
+    """加载配置并把 db_path 指到测试库（profile.yaml 故意指向不存在的路径 → 走内置默认）。
+
+    站点源默认关闭：本文件的用例只验证 campus/gzh 流水线，若放行站点源，
+    cmd_fetch 会在测试进程里真连 tsinghua.edu.cn 并污染行数/退出码断言。
+    要测站点源请显式传 site_enabled=True 并 monkeypatch site_source.fetch_html。
+    """
+    overrides.setdefault("site_enabled", False)
+    overrides.setdefault("site_sources", [])
     cfg = config_mod.load_config(
         profile_path=WORK / "no-such-profile.yaml", env_path=env_path
     )

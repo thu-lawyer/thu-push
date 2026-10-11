@@ -68,6 +68,10 @@ class Config:
     gzh_zhipu_api_key: str = ""  # 智谱 API key（ND_ZHIPU_API_KEY）
     gzh_llm_model: str = ""      # 智谱模型名（ND_LLM_MODEL）
 
+    # --- 站点源（site_source；清华官网静态栏目，2026-10-11 信息源清单第二类） ---
+    site_enabled: bool = False   # 总开关（ND_SITE_ENABLED）；opt-in，未配置即关闭
+    site_sources: list = field(default_factory=lambda: ["xykd"])  # 已核实源 id 列表（ND_SITE_SOURCES，逗号分隔）
+
     def clamp_top_n(self, value: int | None = None) -> int:
         n = self.top_n if value is None else value
         try:
@@ -288,6 +292,23 @@ def _as_list(value: Any, default: list) -> list:
     return list(default)
 
 
+def _as_bool(value: Any, default: bool) -> bool:
+    if value is None:
+        return default
+    text = str(value).strip().lower()
+    if text in {"1", "true", "yes", "on", "y"}:
+        return True
+    if text in {"0", "false", "no", "off", "n"}:
+        return False
+    return default
+
+
+def _as_csv(value: Any, default: str) -> list:
+    """逗号分隔列表。与 _as_list 的区别：单个字符串会按逗号切分而非整块收下。"""
+    text = _as_str(value, default)
+    return [p.strip() for p in text.split(",") if p.strip()]
+
+
 def load_config(
     profile_path: Path | None = None,
     env_path: Path | None = None,
@@ -342,6 +363,8 @@ def load_config(
         gzh_lookback=_as_int(opt("ND_GZH_LOOKBACK", ""), 26),
         gzh_zhipu_api_key=opt("ND_ZHIPU_API_KEY", ""),
         gzh_llm_model=opt("ND_LLM_MODEL", ""),
+        site_enabled=_as_bool(opt("ND_SITE_ENABLED", ""), False),
+        site_sources=_as_csv(opt("ND_SITE_SOURCES", "") or "xykd", "xykd"),
         smtp_user=opt("ND_SMTP_USER", _as_str(smtp.get("user"), "")),
         smtp_pass=opt("ND_SMTP_PASS", ""),
         smtp_ssl=bool(smtp.get("ssl", True)),

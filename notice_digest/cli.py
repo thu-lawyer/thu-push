@@ -18,6 +18,7 @@ from pathlib import Path
 
 from . import fetch as fetch_mod
 from . import score as score_mod
+from . import site_source
 from .config import Config, load_config
 from .enrich import enrich_pending, parsed_for_item
 from . import feedback as feedback_mod
@@ -189,8 +190,28 @@ def cmd_fetch(cfg: Config, args) -> int:
             "detail": f"翻到 max_pages={pages} 仍未出现空页/全已读页；站点窗口可能比预期更长",
         })
 
+    site_stats = {"enabled": bool(cfg.site_enabled), "sources": []}
+    if cfg.site_enabled:
+        for _site_id in cfg.site_sources:
+            try:
+                site_stats["sources"].append(
+                    site_source.ingest_site(
+                        store, _site_id, now=now, timeout=cfg.timeout, retries=cfg.retries
+                    )
+                )
+            except Exception as exc:  # 站点源故障只隔离到本源，不拖垮 campus 抓取
+                site_stats["sources"].append(
+                    {"id": _site_id, "error": f"{type(exc).__name__}: {exc}"}
+                )
+                anomalies.append({
+                    "kind": "site-source-error",
+                    "severity": "error",
+                    "detail": f"站点源 {_site_id} 失败: {type(exc).__name__}: {exc}",
+                })
+
     result = {
         "campus": campus,
+        "site": site_stats,
         "pages_scanned": scanned_pages,
         "new": inserted,
         "known": known,
