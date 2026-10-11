@@ -1,6 +1,6 @@
 # we-mp-rss 引擎 API 契约（v1.5.3 实测）
 
-引擎仅监听 `127.0.0.1:8792`，以下均为本机路径。鉴权：`Authorization: Bearer <token>`。
+引擎仅监听 `127.0.0.1:8792`，以下均为本机路径。鉴权方式为 HTTP Bearer 令牌（取值见引擎配置）。
 SPA 全局捕获 GET：`/openapi.json` 返回 HTML，调试用 venv python 导入 `apis/` 内省。
 
 ## 认证

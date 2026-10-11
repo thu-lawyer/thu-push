@@ -172,10 +172,11 @@ def zhipu_rank(items, top_n, model):
                      {"role": "user", "content": usr_p}],
         "temperature": 0.2, "max_tokens": 8000,
     }).encode()
+    zhipu_token = os.environ["ZHIPU_API_KEY"]
     req = urllib.request.Request(
         "https://open.bigmodel.cn/api/paas/v4/chat/completions", data=body,
         headers={"Content-Type": "application/json",
-                 "Authorization": "Bearer " + os.environ["ZHIPU_API_KEY"]})
+                 "Authorization": "Bearer " + zhipu_token})
     try:
         with urllib.request.urlopen(req, timeout=180) as r:
             data = json.load(r)
